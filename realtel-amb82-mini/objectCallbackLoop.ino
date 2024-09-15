@@ -48,11 +48,12 @@ char ssid[] = "Maya";   // your network SSID (name)
 char pass[] = "Maya@123";       // your network password
 int status = WL_IDLE_STATUS;
 
-const char* mqtt_server = "192.168.0.55";
-const char* mqtt_topic = "face_detection/image";
+char mqtt_server[] = "192.168.0.55";
+char clientId[]       = "amebaClient";
+char mqtt_topic[] = "face_detection/image";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+WiFiClient wifiClient;
+PubSubClient client(wifiClient);
 
 IPAddress ip;
 int rtsp_portnum;
@@ -75,8 +76,38 @@ bool messageResults(const char* detectedObject) {
   return result;
 }
 
+void callback(char* topic, byte* payload, unsigned int length) {
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (unsigned int i = 0; i < length; i++) {
+        Serial.print((char)(payload[i]));
+    }
+    Serial.println();
+}
+
+void reconnect() {
+    // Loop until we're reconnected
+    while (!(client.connected())) {
+        Serial.print("\r\nAttempting MQTT connection...");
+        // Attempt to connect
+        if (client.connect(clientId)) {
+            Serial.println("connected");
+        } else {
+            Serial.println("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            //Wait 5 seconds before retrying
+            delay(5000);
+        }
+    }
+}
+
 void setup() {
     Serial.begin(115200);
+    while (!Serial) {
+        ;
+    }
     client.setServer(mqtt_server, 1883);
 
     // attempt to connect to Wifi network:
@@ -137,6 +168,10 @@ void setup() {
 
 void loop() {
     std::vector<ObjectDetectionResult> results = ObjDet.getResult();
+     if (!(client.connected())) {
+        Serial.print("Not connected");
+        reconnect();
+    }
 
     uint16_t im_h = config.height();
     uint16_t im_w = config.width();
