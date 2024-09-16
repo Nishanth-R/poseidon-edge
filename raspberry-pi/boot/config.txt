@@ -1,0 +1,12 @@
+# Existing content of /boot/config.txt
+# ...
+
+# Enable wake-on-GPIO for GPIO 26
+[all]
+gpio=26=ip,pu
+dtoverlay=gpio-wakup
+dtparam=gpio_pin=26
+dtparam=active_low=0
+
+# Enable Wake-on-LAN (optional, but often useful)
+dtoverlay=wake-on-lan
