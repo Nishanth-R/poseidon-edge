@@ -6,13 +6,13 @@ import time
 import random
 
 # Wi-Fi credentials
-SSID = "YOUR_WIFI_SSID"
-PASSWORD = "YOUR_WIFI_PASSWORD"
+SSID = "Maya"
+PASSWORD = "Maya@123"
 
 # MQTT settings
-MQTT_BROKER = "YOUR_MQTT_BROKER_ADDRESS"
+MQTT_BROKER = "192.168.0.55"
 MQTT_TOPIC = b"poseidon-act"
-MQTT_CLIENT_ID = f"pico_client_{random.randint(0, 1000000)}"
+MQTT_CLIENT_ID = f"pico_client_3"
 
 # GPIO pin assignments
 BILGE_RELAY_PIN = 16
@@ -44,21 +44,38 @@ def connect_wifi():
         print("IP address:", wlan.ifconfig()[0])
     else:
         print("Failed to connect to Wi-Fi")
+        print(str(SSID))
+        print(str(PASSWORD))
         return False
     return True
+
+def get_boolean_data(string):
+    value = string.split(':') 
+    if value[1].strip() in ['True', 'true',1]:
+        return True
+    return False 
 
 def mqtt_callback(topic, msg):
     print("Received message on topic:", topic)
     print("Message:", msg)
-    
+    msg = str(msg)
+    msg = msg.split("||")
+    for data in msg:
+        if 'bilge' in data:
+            bilge = get_boolean_data(data)
+        elif 'drain' in data:
+            drain = get_boolean_data(data)
+        elif 'wake' in data:
+            wake = get_boolean_data(data)
     try:
-        data = ujson.loads(msg)
         
         # Control relays
-        if data.get('bilge') and not data.get('drain'):
+        if bilge:
+            print('Bilge is turned ON') 
             bilge_relay.on()
             drain_relay.off()
-        elif data.get('drain') and not data.get('bilge'):
+        elif drain:
+            print('Drain is turned ON')
             drain_relay.on()
             bilge_relay.off()
         else:
@@ -66,7 +83,7 @@ def mqtt_callback(topic, msg):
             drain_relay.off()
         
         # Wake up Raspberry Pi 5
-        if data.get('wake'):
+        if wake:
             wake_raspberry_pi()
     
     except ValueError as e:
@@ -91,6 +108,14 @@ def connect_mqtt():
         print(f"Failed to connect to MQTT broker: {e}")
         return False
 
+def check_mqtt_connection():
+    try:
+        # Ping the broker
+        mqtt_client.ping()
+        return True
+    except Exception:
+        return False
+
 def main():
     while True:
         if not wlan or not wlan.isconnected():
@@ -98,13 +123,13 @@ def main():
                 time.sleep(10)
                 continue
 
-        if not mqtt_client or not mqtt_client.is_connected():
+        if not mqtt_client or not check_mqtt_connection():
             if not connect_mqtt():
                 time.sleep(10)
                 continue
 
         try:
-            mqtt_client.check_msg()
+            mqtt_client.check_msg(attempts=3)
             time.sleep(0.1)
         except Exception as e:
             print(f"Error in main loop: {e}")
