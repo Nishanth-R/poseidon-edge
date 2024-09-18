@@ -1,4 +1,5 @@
-from sensors import MPRLS,BNO085
+from sensors import MPRLS,BNO085, i2c
+import time
 from transceive import connect_mqtt,connect_wifi
 from config import mqtt_topic
 
@@ -14,7 +15,7 @@ client = connect_mqtt()
 
 def send_message(client, payload):
     client.publish(mqtt_topic, payload)
-    print('Published message : '+str(payload))
+    print('Published message : '+payload)
     
 
 while True:
@@ -24,17 +25,15 @@ while True:
         
         if pressure is not None and accel_x is not None:
             # Send data via MQTT
-            payload = {'pressure':pressure,
-                       'acceleration':{'x_axis':accel_x,
-                                       'y_axis':accel_y,
-                                       'z_axis':accel_z}}
+            payload = 'pressure:'+str(pressure)+'||acceleration:'+str([accel_x,accel_y,accel_z])
 
             print(f"Pressure: {pressure:.2f} kPa")
             print(f"Acceleration: X={accel_x:.2f}, Y={accel_y:.2f}, Z={accel_z:.2f} m/s^2")
+            print(payload) 
             send_message(client, payload)
         else:
             print('Did not receive data from Sensor') 
-        time.sleep(0.5)
+        time.sleep(1) #Keep the delay as 1s, lower values is causing some comms issue on the I2C side
     
     except KeyboardInterrupt:
         print("Program interrupted by user.")
