@@ -1,5 +1,4 @@
 import network
-import ujson
 from umqtt.robust import MQTTClient
 from machine import Pin, reset
 import time
