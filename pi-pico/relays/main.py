@@ -5,11 +5,11 @@ import time
 import random
 
 # Wi-Fi credentials
-SSID = "Maya"
-PASSWORD = "Maya@123"
+SSID = "wifi_ssid"
+PASSWORD = "passwd"
 
 # MQTT settings
-MQTT_BROKER = "192.168.0.55"
+MQTT_BROKER = "broker_ip_address"
 MQTT_TOPIC = b"poseidon-act"
 MQTT_CLIENT_ID = f"pico_client_3"
 
